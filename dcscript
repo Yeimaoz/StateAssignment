@@ -1,0 +1,73 @@
+#!/bin/tclsh 
+source header.tcl
+source proc.tcl
+
+set design_path "design"
+set design_name "t1.v"
+set golden_clk_period 10
+set clk_period_scale 0.5 
+
+#load my design
+#prototype | read_file -format FILETYPE FILENAME |
+echo design_name $design_name
+read_file -format verilog ./$design_path/$design_name > /dev/null
+
+#evaluate the golden design's clk lower bound
+while 1 { 
+    if { [ down_scale_clk_period $design_path $design_name $golden_clk_period $clk_period_scale ] == 0.00 } {
+        echo \t-> fit
+        set golden_clk_period [ expr $golden_clk_period - $clk_period_scale ] 
+    } else {
+        echo \t-> _fit
+        set golden_clk_period [ expr $golden_clk_period + $clk_period_scale ]
+        compile -map_effort high -boundary_optimization > ./$compile_rep_dir/$design_name.report
+        report_area > $area_rep_dir/golden.report
+        report_power > $power_rep_dir/golden.report
+        break
+    }
+}
+echo golden_clk_period $golden_clk_period 
+
+#evaluate state count for generating random design
+set state_count [ exec bash -c "./state_count $design_path $design_name" ] 
+
+
+#evaluate random design's lower bound clk
+set random_round 30
+set i 0
+while { $i < $random_round } {
+    remove_design -all    
+    #generate random design
+    set lhs [ expr int(rand()*$state_count) ]
+    set rhs [ expr int(rand()*$state_count) ]
+    exec bash -c "./random_state_assignment $lhs $rhs $design_path $design_name"
+    set random_design [ exec bash -c "echo _$lhs\_$rhs.v" ] 
+    echo random_design $random_design
+    read_file -format verilog ./$random_design_path/$random_design 
+
+    set clk_period 10
+    while { $clk_period > $golden_clk_period } {
+        if { [ down_scale_clk_period $random_design_path $random_design $clk_period $clk_period_scale ] == 0.00 } {
+            echo \t-> fit
+            set clk_period [ expr $clk_period - $clk_period_scale ] 
+        } else {
+            echo \t-> _fit
+            set clk_period [ expr $clk_period + $clk_period_scale ]
+            compile -map_effort high -boundary_optimization > ./$compile_rep_dir/$random_design.report
+            break
+        }
+    }
+    if { $clk_period > $golden_clk_period } {
+        echo reject_bad_state_assignment
+        exec rm ./$compile_rep_dir/$random_design.report
+        exec rm ./$area_rep_dir/$random_design.report
+        exec rm ./$power_rep_dir/$random_design.report
+    } else {
+        echo accept_this_state_assignment
+        report_area > $area_rep_dir/$random_design.report
+        report_power > $power_rep_dir/$random_design.report
+    }
+    incr i
+}
+#exit dc_shell
+exit
