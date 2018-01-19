@@ -1,0 +1,5 @@
+#sed get total area & power
+echo $1
+cat $1/* | sed -n 's/Total[^0-9]*\([0-9]\+\.[0-9]\+\)/\1/p' | sort | head -1 
+echo $2
+cat $2/* | sed -n 's/Total Dynamic[^0-9]*\([0-9]\+\.[0-9]\+\).*\+/\1/p' | sort | head -1 
