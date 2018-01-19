@@ -1,0 +1,12 @@
+#!/bin/bash
+
+lhs=$(echo $1)
+rhs=$(echo $2)
+_lhs=$(echo S$lhs=)
+_rhs=$(echo S$rhs=)
+_temp=$(echo temp=)
+filename=$(echo "_${lhs}_${rhs}.v")
+
+#generate new state assignment verilog
+cat ./$3/$4 | sed "s/${_lhs}/${_temp}/g" | sed "s/${_rhs}/${_lhs}/g" | sed "s/${_temp}/${_rhs}/g" | sed "s/module .*(/module _${lhs}_${rhs}(/g " > ./random_test_cases/$filename  
+
