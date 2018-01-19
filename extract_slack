@@ -1,0 +1,29 @@
+#!/bin/tcsh
+#seperate by white space
+#< '\s' = white space >
+#< 'nd' = delete nth line >
+#< '$'  = last one >
+#sed 's/\s/\n/g'
+#using double quotes can to make the shell expand variables
+
+cat ./report_compile/$1.report | grep -e '[0-9]:' > data_extraction 
+set lines=`cat data_extraction | wc -l`
+
+set i=1 
+set neg_slack=0
+while ( $i <= $lines )
+#extract slack value in first line
+    set slack=`cat data_extraction | sed -n "${i}p" | sed 's/\s\+/\n/g' | sed '1d;$d' | sed -n '3p'`
+    if ( $slack != 0.00 ) then
+        set neg_slack=1
+        break
+    endif
+    @ i++ 
+end
+echo $neg_slack
+rm data_extraction
+
+
+
+
+
