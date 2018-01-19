@@ -1,0 +1,1 @@
+cat ./$1/$2 | sed -n '/parameter/,/\;/p' | sed -n -e 's/\s/\n/gp' | sed '1d' | wc -l
