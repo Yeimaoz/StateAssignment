@@ -1,0 +1,15 @@
+rlist=$(shuf -i 0-63 | head -36) 
+stringarr=($rlist)
+var="" 
+i=0
+for x in ${stringarr[@]}; do 
+    var=${var}S$i'='7\'d$x,\
+    i=$((i+1))
+    if [ $(($i%5)) == 0 ] 
+    then
+        var=$var'\n'
+    fi
+done
+var=parameter\ $var
+cat design/t1.v | sed -e '/para/,/\;/d' | sed "7i${var}"
+
