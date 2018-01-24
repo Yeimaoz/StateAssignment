@@ -36,6 +36,7 @@ set state_count [ exec bash -c "./state_count $design_path $design_name" ]
 set random_round 30
 set i 0
 while { $i < $random_round } {
+    echo round $i
     remove_design -all    
     #generate random design
     set lhs [ expr int(rand()*$state_count) ]
@@ -69,5 +70,6 @@ while { $i < $random_round } {
     }
     incr i
 }
+exec bash -c "./data_collection" > report
 #exit dc_shell
 exit
