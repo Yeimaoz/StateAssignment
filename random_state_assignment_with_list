@@ -31,10 +31,10 @@ for x in ${stringarr[@]}; do
     fi
 done
 var=parameter\ $var
-
+var=$(echo $var | sed 's/\(.*\)\(\,\)$/\1\;/g') 
 #get the line number of the matched pattern
 line_number=$(cat design/t1.v | grep 'para' -n | sed -n 's/\(:.*\)$//p')
 
 #show the replaced design
-cat design/t1.v | sed -e '/para/,/\;/d' | sed "${line_number}i${var}"
+cat design/t1.v | sed -e '/para/,/\;/d' | sed "${line_number}i${var}" | sed "s/module .*(/module case${3}(/g" > random_test_cases/case$3.v
 
