@@ -3,73 +3,90 @@ source header.tcl
 source proc.tcl
 
 set design_path "design"
+set random_design_path "random_test_cases"
+set compile_rep_dir "report_compile"
+set power_rep_dir "report_power"
+set area_rep_dir "report_area"
+set timing_rep_dir "report_timing"
+
+set design_path "design"
 set design_name "t1.v"
-set golden_clk_period 10
-set clk_period_scale 0.5 
+set clk_period 10
 
 #load my design
 #prototype | read_file -format FILETYPE FILENAME |
-echo design_name $design_name
-read_file -format verilog ./$design_path/$design_name > /dev/null
+#echo design_name $design_name
+#
+#echo read_file_start
+#read_file -format verilog ./$design_path/$design_name > /dev/null
+#echo read_file_end
+#
+#echo get_lowest_clk_period_start
+#while { 1 } {
+#    #set clk
+#    create_clock -name clk -period $clk_period { clk }
+#
+#    #compile
+#    compile -map_effort high -boundary_optimization > ./$compile_rep_dir/$design_name.report
+#
+#    #report timing
+#    report_timing > ./$timing_rep_dir/$design_name.report
+#
+#    #get slack
+#    set slack [ exec bash -c "./get_slack $design_name.report" ]
+#    echo slack $slack
+#    if { $slack == 0.00 } {
+#        echo get_lowest_clk_period
+#        break
+#    } else {
+#        echo not_enough_low_clk_period
+#        set clk_period [ expr $clk_period - $slack ]
+#    }
+#}
+#echo get_lowest_clk_period_end
 
-#evaluate the golden design's clk lower bound
-while 1 { 
-    if { [ down_scale_clk_period $design_path $design_name $golden_clk_period $clk_period_scale ] == 0.00 } {
-        echo \t-> fit
-        set golden_clk_period [ expr $golden_clk_period - $clk_period_scale ] 
-    } else {
-        echo \t-> _fit
-        set golden_clk_period [ expr $golden_clk_period + $clk_period_scale ]
-        compile -map_effort high -boundary_optimization > ./$compile_rep_dir/$design_name.report
-        report_area > $area_rep_dir/golden.report
-        report_power > $power_rep_dir/golden.report
-        break
-    }
-}
-echo golden_clk_period $golden_clk_period 
-
-#evaluate state count for generating random design
-set state_count [ exec bash -c "./state_count $design_path $design_name" ] 
-
-
-#evaluate random design's lower bound clk
-set random_round 30
+set round 10
 set i 0
-while { $i < $random_round } {
-    echo round $i
-    remove_design -all    
-    #generate random design
-    set lhs [ expr int(rand()*$state_count) ]
-    set rhs [ expr int(rand()*$state_count) ]
-    exec bash -c "./random_state_assignment $lhs $rhs $design_path $design_name"
-    set random_design [ exec bash -c "echo _$lhs\_$rhs.v" ] 
-    echo random_design $random_design
-    read_file -format verilog ./$random_design_path/$random_design 
+echo gen_random_test_cases
+while { $i < $round } {
+    echo gen_case$i
+    exec bash -c "./random_state_assignment_with_list $design_path $design_name $i"
+    set gen_design_name case$i.v
+    echo using_$design_name
 
+    remove_design -all
+    echo read_file_start
+    read_file -format verilog ./$random_design_path/$gen_design_name 
+    echo read_file_end
+    
     set clk_period 10
-    while { $clk_period > $golden_clk_period } {
-        if { [ down_scale_clk_period $random_design_path $random_design $clk_period $clk_period_scale ] == 0.00 } {
-            echo \t-> fit
-            set clk_period [ expr $clk_period - $clk_period_scale ] 
-        } else {
-            echo \t-> _fit
-            set clk_period [ expr $clk_period + $clk_period_scale ]
-            compile -map_effort high -boundary_optimization > ./$compile_rep_dir/$random_design.report
+    echo get_lowest_clk_period_start
+    while { 1 } {
+        #set clk
+        create_clock -name clk -period $clk_period { clk }
+    
+        #compile
+        compile -map_effort high -boundary_optimization > ./$compile_rep_dir/$gen_design_name.report
+    
+        #report timing
+        report_timing > ./$timing_rep_dir/$gen_design_name.report
+    
+        #get slack
+        set slack [ exec bash -c "./get_slack $gen_design_name.report" ]
+        echo slack $slack
+        if { $slack == 0.00 } {
+            echo get_lowest_clk_period
+            report_area > ./$area_rep_dir/$gen_design_name.report
+            report_power > ./$power_rep_dir/$gen_design_name.report
             break
+        } else {
+            echo not_enough_low_clk_period
+            set clk_period [ expr $clk_period - $slack ]
         }
     }
-    if { $clk_period > $golden_clk_period } {
-        echo reject_bad_state_assignment
-        exec rm ./$compile_rep_dir/$random_design.report
-        exec rm ./$area_rep_dir/$random_design.report
-        exec rm ./$power_rep_dir/$random_design.report
-    } else {
-        echo accept_this_state_assignment
-        report_area > $area_rep_dir/$random_design.report
-        report_power > $power_rep_dir/$random_design.report
-    }
+    echo get_lowest_clk_period_end
+    
     incr i
 }
-exec bash -c "./data_collection" > report
-#exit dc_shell
-exit
+
+
