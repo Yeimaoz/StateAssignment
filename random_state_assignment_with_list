@@ -1,9 +1,29 @@
-rlist=$(shuf -i 0-63 | head -36) 
-stringarr=($rlist)
+#!/bin/bash
+
+#counting the range of random number
+sc=$(($(./state_count $1 $2)+1))
+function log2 {
+    local x=0
+    for (( y=$1-1 ; $y > 0; y >>= 1 )) ; do
+        let x=$x+1
+    done
+    echo $x
+}
+expon=$(log2 $sc)
+rpn=$(($(echo 2^$expon | bc)-1))
+
+#generate a array, its size fits sc, and in random order 
+random_list=$(shuf -i 0-$rpn | head -$sc) 
+
+#get input width
+input_width=$(($(cat design/t1.v | sed -n 's/input\s\+\[\([0-9]\+\):.*$/\1/p')+1))
+
+#generate the parameter part with the random_list
+stringarr=($random_list)
 var="" 
 i=0
 for x in ${stringarr[@]}; do 
-    var=${var}S$i'='7\'d$x,\
+    var=${var}S$i'='$input_width\'d$x,\
     i=$((i+1))
     if [ $(($i%5)) == 0 ] 
     then
@@ -11,5 +31,10 @@ for x in ${stringarr[@]}; do
     fi
 done
 var=parameter\ $var
-cat design/t1.v | sed -e '/para/,/\;/d' | sed "7i${var}"
+
+#get the line number of the matched pattern
+line_number=$(cat design/t1.v | grep 'para' -n | sed -n 's/\(:.*\)$//p')
+
+#show the replaced design
+cat design/t1.v | sed -e '/para/,/\;/d' | sed "${line_number}i${var}"
 
