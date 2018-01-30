@@ -1,0 +1,10 @@
+#!/bin/bash
+
+var=""
+for casex in $(ls random_test_cases); do
+    var=$var$(echo $casex,'\n')
+    cat ./random_test_cases/$casex | sed -n '/parameter/,/\;/p' | sed 's/\s\|\,\|\;/\n/g' | sed '1d' | sed '/^\s*$/d' | sed 's/S[0-9]\+'='7'\''\d\([0-9]\+\)/\1\, /g' | sed "1i${casex}\," > state_assignment_txt/$casex.report
+done
+
+casex=$(ls $PWD/state_assignment_txt/*)
+paste -d '' $casex > sa_info.csv
