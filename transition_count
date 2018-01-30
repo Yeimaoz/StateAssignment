@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sc=$(./state_count $1 $2)
+for i in $(seq 0 $sc); do
+    echo $(cat $1/$2 | sed -n "/S${i}:/,/endcase/p" | sed -n '/7'\''b.*end$/p' | wc -l), 
+done
