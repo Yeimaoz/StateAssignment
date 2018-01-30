@@ -1,12 +1,14 @@
 #!/bin/bash
 area="report_area"
 power="report_power"
+timing="report_timing"
 ls_result=$(ls $area)
 ls_length=$(ls -1 $area | wc -l)
 
 for elem in $ls_result; do
-    name=$(echo $elem | sed 's/\(.*\)\.report/\1/' | sed 's/_\(.*\)\.v/\1/')
+    name=$(echo $elem | sed 's/\(.*\)\.report/\1/' | sed 's/\(.*\)\.v/\1/')
     res_a=$(cat $area/$elem | sed -n 's/Total[^0-9]*\([0-9]\+\.[0-9]\+\)/\1/p' | sort | head -1)
     res_p=$(cat $power/$elem | sed -n 's/Total Dynamic[^0-9]*\([0-9]\+\.[0-9]\+\).*\+/\1/p' | sort | head -1)
-    echo $name\, $res_a\, $res_p\,
+    res_t=$(cat $timing/$elem | grep 'data required time' | sort -u | sed 's/.*\([0-9]\+\.[0-9]\+\)$/\1/')
+    echo $name\, $res_a\, $res_p\, $res_t
 done
