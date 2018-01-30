@@ -1,0 +1,5 @@
+#!/bin/bash
+
+for i in $(seq 0 63); do 
+    echo $i\ $(cat sa_info.csv | sed '1d' | grep -o -e "\s${i}\," | wc -l)
+done
