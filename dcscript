@@ -45,18 +45,18 @@ set clk_period 10
 #}
 #echo get_lowest_clk_period_end
 
-set round 10
+set round 1000
 set i 0
 echo gen_random_test_cases
 while { $i < $round } {
     echo gen_case$i
     exec bash -c "./random_state_assignment_with_list $design_path $design_name $i"
     set gen_design_name case$i.v
-    echo using_$design_name
+    echo using_$gen_design_name
 
     remove_design -all
     echo read_file_start
-    read_file -format verilog ./$random_design_path/$gen_design_name 
+    read_file -format verilog ./$random_design_path/$gen_design_name > /dev/null 
     echo read_file_end
     
     set clk_period 10
@@ -89,4 +89,4 @@ while { $i < $round } {
     incr i
 }
 
-
+exit
